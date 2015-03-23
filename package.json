@@ -16,6 +16,9 @@
     "webpack-dev-server": "^1.7.0"
   },
   "dependencies": {
-    "react": "^0.13.0"
+    "react": "^0.13.0",
+    "flux": "^2.0.1",
+    "keymirror": "~0.1.0",
+    "object-assign": "^1.0.0"
   }
 }
