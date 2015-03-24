@@ -1,8 +1,32 @@
+console.log('begin dispatcher');
+
 var Promise = require('es6-promise').Promise;
 var assign = require('object-assign');
 
 var _callbacks = [];
 var _promises = [];
+
+/**
+ * Add a promise to the queue of callback invocation promises.
+ * @param {function} callback The Store's registered callback.
+ * @param {object} payload The data from the Action.
+ */
+var _addPromise = function(callback, payload) {
+  _promises.push(new Promise(function(resolve, reject) {
+    if (callback(payload)) {
+      resolve(payload);
+    } else {
+      reject(new Error('Dispatcher callback unsuccessful'));
+    }
+  }));
+};
+
+/**
+ * Empty the queue of callback invocation promises.
+ */
+var _clearPromises = function() {
+  _promises = [];
+};
 
 var Dispatcher = function() {};
 Dispatcher.prototype = assign({}, Dispatcher.prototype, {
@@ -13,7 +37,9 @@ Dispatcher.prototype = assign({}, Dispatcher.prototype, {
    * @return {number} The index of the callback within the _callbacks array.
    */
   register: function(callback) {
+    console.log('store registered callback in dispatcher');
     _callbacks.push(callback);
+    //debugger;
     return _callbacks.length - 1; // index
   },
 
@@ -22,27 +48,20 @@ Dispatcher.prototype = assign({}, Dispatcher.prototype, {
    * @param  {object} payload The data from the action.
    */
   dispatch: function(payload) {
-    // First create array of promises for callbacks to reference.
-    var resolves = [];
-    var rejects = [];
-    _promises = _callbacks.map(function(_, i) {
-      return new Promise(function(resolve, reject) {
-        resolves[i] = resolve;
-        rejects[i] = reject;
-      });
+    console.log('Dispatcher received payload');
+    _callbacks.forEach(function(callback) {
+      console.log('Dispatcher initiate store callback + payload, with promises');
+      _addPromise(callback, payload);
     });
-    // Dispatch to callbacks and resolve/reject promises.
-    _callbacks.forEach(function(callback, i) {
-      // Callback can return an obj, to resolve, or a promise, to chain.
-      // See waitFor() for why this might be useful.
-      Promise.resolve(callback(payload)).then(function() {
-        resolves[i](payload);
-      }, function() {
-        rejects[i](new Error('Dispatcher callback unsuccessful'));
-      });
-    });
-    _promises = [];
+
+
+    Promise.all(_promises).then(_clearPromises);
+
+    console.log('dispatcher get if all store callback are done with promises');
   }
+
 });
+
+
 
 module.exports = Dispatcher;
